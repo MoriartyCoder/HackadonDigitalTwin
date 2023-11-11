@@ -3,53 +3,70 @@ using System.Collections;
 
 public class CameraMovement : MonoBehaviour
 {
-    public float speed = 5f; // Geschwindigkeit der Kamerabewegung
-    public float verticalSpeed = 3f; // Geschwindigkeit der vertikalen Kamerabewegung
-    public float rotationSpeed = 3f; // Geschwindigkeit der Kameradrehung
-    public float shiftMultiplier = 2f; // Multiplikator für die Geschwindigkeit bei Umschalttaste
-    public Transform topDownPosition; // Zielposition für die Top-Down-Ansicht
+    public float speed = 5f;
+    public float verticalSpeed = 3f;
+    public float rotationSpeed = 3f;
+    public float shiftMultiplier = 2f;
+    public Transform topDownPosition;
 
-    private bool isMovingToTopDown = false; // Flag, um zu überprüfen, ob die Kamera in die Top-Down-Ansicht bewegt wird
+    private bool isMovingToTopDown = false;
 
     void Update()
     {
-        // Wenn die Taste "E" gedrückt wird, startet die Coroutine für die Bewegung zur Top-Down-Ansicht
         if (Input.GetKeyDown(KeyCode.E) && !isMovingToTopDown)
         {
             StartCoroutine(MoveToTopDownView());
         }
 
-        // Umschalttaste prüfen
         float multiplier = 1f;
         if (Input.GetKey(KeyCode.LeftShift))
         {
             multiplier = shiftMultiplier;
         }
 
-        // Kamera bewegen
+        if (Input.GetKey(KeyCode.Space))
+        {
+            transform.Translate(Vector3.up * verticalSpeed * Time.deltaTime);
+        }
+
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            transform.Translate(Vector3.down * verticalSpeed * Time.deltaTime);
+        }
+
         Vector3 movement = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical")) * speed * Time.deltaTime;
         transform.Translate(movement * multiplier);
 
-        // Mausdruck prüfen (linke Maustaste)
         if (Input.GetMouseButton(0))
         {
-            // Kameradrehung berechnen
             float rotationX = Input.GetAxis("Mouse X") * rotationSpeed;
             float rotationY = -Input.GetAxis("Mouse Y") * rotationSpeed;
 
-            // Kamera drehen
             transform.Rotate(Vector3.up * rotationX, Space.World);
             transform.Rotate(Vector3.right * rotationY, Space.Self);
         }
     }
 
-    // Coroutine für die Bewegung zur Top-Down-Ansicht
     IEnumerator MoveToTopDownView()
     {
         isMovingToTopDown = true;
 
+        // Schau zuerst nach unten
+        Quaternion startRotation = transform.rotation;
+        Quaternion targetRotation = Quaternion.Euler(90f, 0f, 0f);
+
+        float elapsedTime = 0f;
+        float duration = 1f; // Zeit, die für die Rotation nach unten benötigt wird
+
+        while (elapsedTime < duration)
+        {
+            transform.rotation = Quaternion.Slerp(startRotation, targetRotation, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
         // Nach Erreichen der Top-Down-Position, schaue nach unten
-        transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        transform.rotation = targetRotation;
 
         // Zielposition festlegen (beispielsweise über der Szene)
         Vector3 targetPosition = topDownPosition.position;
